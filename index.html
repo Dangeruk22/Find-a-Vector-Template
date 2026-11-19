@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Find Any Vector Template</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #fff5ed;
+      color: #321c14;
+      font: 1rem/1.55 system-ui, sans-serif;
+    }
+    header {
+      padding: 4rem 1rem 5rem;
+      background: linear-gradient(120deg, #59200d, #bf430e);
+      color: white;
+    }
+    .wrap { width: min(100%, 60rem); margin: auto; }
+    main { padding: 0 1rem 3rem; }
+    h1 {
+      margin: 0;
+      font-size: clamp(2.25rem, 7vw, 4.25rem);
+      line-height: 1.05;
+      letter-spacing: -.055em;
+    }
+    header p { margin: 1rem 0 0; color: #ffecdc; }
+    form, article {
+      background: white;
+      border: 1px solid #f0d3bf;
+      border-radius: .85rem;
+      padding: 1rem;
+    }
+    form {
+      margin-top: -2rem;
+      box-shadow: 0 8px 24px #64230e1a;
+    }
+    label { display: block; margin-bottom: .35rem; font-weight: 700; }
+    .controls { display: flex; flex-wrap: wrap; gap: .65rem; }
+    input, button, .link {
+      padding: .65rem .85rem;
+      border-radius: .5rem;
+      font: inherit;
+    }
+    input {
+      flex: 1 1 14rem;
+      min-width: 0;
+      border: 1px solid #ac8070;
+    }
+    button {
+      background: #a8370c;
+      color: white;
+      border: 1px solid #a8370c;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    button:disabled { opacity: .65; cursor: wait; }
+    #example {
+      background: transparent;
+      color: #9a320d;
+      border: 0;
+      padding-inline: 0;
+      text-decoration: underline;
+    }
+    #results { margin-top: 1.5rem; }
+    .sources { display: flex; flex-wrap: wrap; gap: .65rem; }
+    .link {
+      display: inline-block;
+      background: #ffe4cf;
+      color: #822a0a;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    article { margin-top: .75rem; }
+    article.priority { border-left: 5px solid #ee641c; }
+    article h3, article p { margin: 0 0 .35rem; }
+    article h3 { font-size: 1.05rem; }
+    .meta, #status { color: #705045; }
+    :focus-visible { outline: 3px solid #ca440c; outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Find Any Vector Template</h1>
+      <p>Find downloadable vector templates by model and year.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <form id="search">
+      <label for="query">Template name or model</label>
+      <div class="controls">
+        <input id="query" type="search" maxlength="120" required
+               placeholder="e.g. TM 2023 vector template">
+        <button id="submit" type="submit">Find sellers</button>
+      </div>
+      <button id="example" type="button">Try TM 2023</button>
+    </form>
+
+    <section id="results" aria-labelledby="results-title" hidden>
+      <h2 id="results-title">Find a seller</h2>
+      <div class="sources">
+        <a class="link" id="store" target="_blank" rel="noopener noreferrer">
+          Search The Vector Store
+        </a>
+        <a class="link" id="google" target="_blank" rel="noopener noreferrer">
+          Search the web on Google
+        </a>
+      </div>
+      <p id="status" role="status"></p>
+      <div id="listings"></div>
+    </section>
+  </main>
+
+  <script>
+    // Paste your public Worker search endpoint here to enable live listings.
+    // Example: "https://find-any-vector-template.YOUR-SUBDOMAIN.workers.dev/api/search"
+    const API_URL = "";
+
+    const STORE_URL = "https://vectortemplatestore.com/";
+    const form = document.querySelector("#search");
+    const input = document.querySelector("#query");
+    const submit = document.querySelector("#submit");
+    const example = document.querySelector("#example");
+    const results = document.querySelector("#results");
+    const storeLink = document.querySelector("#store");
+    const googleLink = document.querySelector("#google");
+    const status = document.querySelector("#status");
+    const listings = document.querySelector("#listings");
+
+    function setSearchLinks(query) {
+      const storeQuery = query
+        .replace(/\b(?:vector|templates?|graphics|files?|eps|motocross|mx)\b/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const storeSearch = new URL(STORE_URL);
+      storeSearch.search = new URLSearchParams({
+        s: storeQuery || query,
+        post_type: "product"
+      });
+      storeLink.href = storeSearch.href;
+
+      const googleSearch = new URL("https://www.google.com/search");
+      googleSearch.search = new URLSearchParams({
+        q: query + " buy downloadable vector template"
+      });
+      googleLink.href = googleSearch.href;
+    }
+
+    function element(tag, content, className) {
+      const node = document.createElement(tag);
+      node.textContent = content;
+      if (className) node.className = className;
+      return node;
+    }
+
+    function showListing(product, year) {
+      let url;
+      try {
+        url = new URL(product.url);
+      } catch {
+        return;
+      }
+      if (url.protocol !== "https:") return;
+
+      const card = element("article", "", product.priority ? "priority" : "");
+      card.append(
+        element("p", product.seller, "meta"),
+        element("h3", product.title)
+      );
+
+      const details = [];
+      if (product.price) details.push(product.price);
+      if (year) details.push(product.exact ? "Lists " + year : "Other year or unspecified");
+      if (details.length) card.append(element("p", details.join(" · "), "meta"));
+
+      const link = element("a", "View listing", "link");
+      link.href = url.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      card.append(link);
+      listings.append(card);
+    }
+
+    example.addEventListener("click", () => {
+      input.value = "TM 2023 vector template";
+      form.requestSubmit();
+    });
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const query = input.value.trim();
+      if (!query || submit.disabled) return;
+
+      results.hidden = false;
+      listings.replaceChildren();
+      setSearchLinks(query);
+
+      if (!API_URL) {
+        status.textContent = "Open The Vector Store first, or use Google to look for more sellers.";
+        return;
+      }
+
+      submit.disabled = true;
+      example.disabled = true;
+      status.textContent = "Checking The Vector Store first, then other sellers…";
+
+      try {
+        const url = new URL(API_URL);
+        url.searchParams.set("q", query);
+        const response = await fetch(url, { signal: AbortSignal.timeout(25000) });
+        if (!response.ok) throw new Error("Search unavailable");
+
+        const data = await response.json();
+        const products = [...data.products].sort(
+          (a, b) => Number(b.priority) - Number(a.priority)
+        );
+
+        status.textContent = products.length
+          ? products.length + (products.length === 1 ? " listing found." : " listings found.")
+          : "No matching listings found. Try a shorter model name or one of the search links.";
+
+        if (data.storeChecked === false || data.priority === "unavailable") {
+          status.textContent += " The Vector Store catalogue was unavailable.";
+        }
+
+        for (const product of products) showListing(product, data.year);
+      } catch {
+        status.textContent = "Live listings are unavailable. You can still use the search links above.";
+      } finally {
+        submit.disabled = false;
+        example.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
